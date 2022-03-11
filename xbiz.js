@@ -59,9 +59,7 @@ async function fetchListing(url, category, subcategory) {
 			console.log('store', store.length);
 			console.log('records', records.length);
 			store = _.concat(store, records);
-			// console.log(store);
 			console.log('store', store.length);
-			// await wait(1000);
 		}
 	}
 	const csvOptions = {
@@ -82,6 +80,4 @@ async function fetchListing(url, category, subcategory) {
 			}
 		});
 	});
-	// const listings = await fetchListing('https://www.xbiz.com/directory/affiliate-programs/membership-sites', 'Affiliate Programs', 'Membership Sites');
-	// console.log(listings);
 })();
