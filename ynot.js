@@ -34,7 +34,44 @@ async function fetchCategories() {
 	return categories;
 }
 
+async function fetchRecord(_url) {
+	const response = await axios.get(_url);
+	const $ = cheerio.load(response.data);
+
+}
+
+async function fetchListings(url, records, page) {
+	let pages = `/page/${page}`;
+	if (page === 1) {
+		pages = '';
+	}
+	const _url = `${url}${pages}`;
+	console.log(_url);
+	const response = await axios.get(_url);
+	const $ = cheerio.load(response.data);
+	const listings = $('.afflist');
+	if (!listings.length) {
+		return records;
+	}
+
+	listings.each(async (index, element) => {
+		const _url = $(element).find('a.view_more').attr('href');
+		console.log(`pushing ${_url}`);
+		records.push(_url);
+	});
+	page++;
+	return fetchListings(url, records, page);
+}
+
 (async () => {
-	const categories = await fetchCategories();
-	console.log(categories);
+	const __url = 'https://www.ynot.com/business-directory/ynot-category/alternative-online-billing';
+	const records = await fetchListings(__url, [], 1);
+	console.log(records);
+	// for (const mainCategory in ynotCategories) {
+	// 	const subCategories = ynotCategories[mainCategory];
+	// 	for (const subCategory in subCategories) {
+	// 		const url = subCategories[subCategory];
+	// 		const records = await fetchListings(url, mainCategory, subCategories, 1);
+	// 	}
+	// }
 })();
