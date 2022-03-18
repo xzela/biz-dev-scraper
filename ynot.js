@@ -38,7 +38,7 @@ async function fetchRecord(_url) {
 	const response = await axios.get(_url);
 	const $ = cheerio.load(response.data);
 	const record = {
-		tags: [],
+		Tags: [],
 	};
 	// parse contact info
 	$('.siteinfo .business p').each((index, element) => {
@@ -63,23 +63,15 @@ async function fetchRecord(_url) {
 		}
 	});
 
-	// parse description
-	$('.details').each(function (index, element) {
-
-		console.log($(element));
-		if ($(element).hasClass('tag')) {
-			return;
-		}
-		console.log($(element).text());
-	});
-
 	// parse tags
 	$('.details p.tags').find('a').each((index, element) => {
-		record.tags.push($(element).text());
+		record.Tags.push($(element).text());
 	});
 
-	// console.log(description.trim());
-	console.log(record);
+	// parse description
+	$('*').remove('p.tags');
+	const description = $('.details').text().trim().replace(/(\n)/gm, '');
+	record.Description = description;
 	return record;
 }
 
@@ -116,16 +108,23 @@ async function fetchListings(url, records, page) {
 	// 	await fetchRecord(url);
 	// }
 
-	const recordUrl = 'https://www.ynot.com/business-directory/71256/studio-20/';
+	// const recordUrl = 'https://www.ynot.com/business-directory/71256/studio-20/';
 	// const recordUrl = 'https://www.ynot.com/business-directory/31065/rabbits-reviews/';
-	const results = await fetchRecord(recordUrl);
-	console.log(results);
+	// const results = await fetchRecord(recordUrl);
+	// console.log(results);
 
-	// for (const mainCategory in ynotCategories) {
-	// 	const subCategories = ynotCategories[mainCategory];
-	// 	for (const subCategory in subCategories) {
-	// 		const url = subCategories[subCategory];
-	// 		const records = await fetchListings(url, mainCategory, subCategories, 1);
-	// 	}
-	// }
+	for (const mainCategory in ynotCategories) {
+		const subCategories = ynotCategories[mainCategory];
+		for (const subCategory in subCategories) {
+			const url = subCategories[subCategory];
+			const records = await fetchListings(url, [], 1);
+			for (const record in records) {
+				const recordUrl = records[record];
+				const result = await fetchRecord(recordUrl);
+				result['Main Category'] = mainCategory;
+				result['Sub Category'] = subCategory;
+				console.log(result);
+			}
+		}
+	}
 })();
