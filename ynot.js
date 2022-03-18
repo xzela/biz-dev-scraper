@@ -37,7 +37,50 @@ async function fetchCategories() {
 async function fetchRecord(_url) {
 	const response = await axios.get(_url);
 	const $ = cheerio.load(response.data);
+	const record = {
+		tags: [],
+	};
+	// parse contact info
+	$('.siteinfo .business p').each((index, element) => {
+		const data = $(element).html().trim().split('<br>');
+		if (data[0] === 'Business Genre:') {
+			record['Business Genre'] = $(data[1]).text();
+		}
 
+		if (data[0] === 'Business Website Address:') {
+			record['Business Website Address'] = $(data[1]).attr('href');
+		}
+
+		if (data[0] === 'Business Numbers:') {
+			record['Business Number'] = $($(data[1])[1]).text();
+		}
+
+		if (data[0] === 'Business Address:') {
+			const text = $(element).contents().text().replace('Business Address:', '').trim().replace(/(\r\n|\n|\r|\t)/gm, '');
+			const parts = text.split(/\s{2,}/g);
+			const address = parts.join(', ');
+			record['Business Address'] = address;
+		}
+	});
+
+	// parse description
+	$('.details').each(function (index, element) {
+
+		console.log($(element));
+		if ($(element).hasClass('tag')) {
+			return;
+		}
+		console.log($(element).text());
+	});
+
+	// parse tags
+	$('.details p.tags').find('a').each((index, element) => {
+		record.tags.push($(element).text());
+	});
+
+	// console.log(description.trim());
+	console.log(record);
+	return record;
 }
 
 async function fetchListings(url, records, page) {
@@ -64,9 +107,20 @@ async function fetchListings(url, records, page) {
 }
 
 (async () => {
-	const __url = 'https://www.ynot.com/business-directory/ynot-category/alternative-online-billing';
-	const records = await fetchListings(__url, [], 1);
-	console.log(records);
+	// const __url = 'https://www.ynot.com/business-directory/ynot-category/alternative-online-billing';
+	// const records = await fetchListings(__url, [], 1);
+	// console.log(records);
+
+	// for (const r in records) {
+	// 	const url = records[r];
+	// 	await fetchRecord(url);
+	// }
+
+	const recordUrl = 'https://www.ynot.com/business-directory/71256/studio-20/';
+	// const recordUrl = 'https://www.ynot.com/business-directory/31065/rabbits-reviews/';
+	const results = await fetchRecord(recordUrl);
+	console.log(results);
+
 	// for (const mainCategory in ynotCategories) {
 	// 	const subCategories = ynotCategories[mainCategory];
 	// 	for (const subCategory in subCategories) {
