@@ -8,6 +8,7 @@ const util = require('util');
 
 const readFile = util.promisify(fs.readFile);
 const writeFile = util.promisify(fs.writeFile);
+const json2csv = util.promisify(converter.json2csv);
 
 const ynotCategories = require('./data/ynot.json');
 
@@ -105,6 +106,38 @@ async function fetchListings(url, records, page) {
 	return fetchListings(url, records, page);
 }
 
+async function writeCSV(records) {
+	const csvOptions = {
+		delimiter: {
+			wrap: '"',
+		},
+		emptyFieldValue: '',
+		trimFieldValues: true,
+		expandArrayObjects: true,
+		keys: [
+			'Name',
+			'Business Genre',
+			'Main Category',
+			'Sub Category',
+			'Business Website Address',
+			'Description',
+			'Business Number',
+			'Business Address',
+			'Tags',
+		],
+	};
+	const data = [];
+	for (const record in records) {
+		const item = records[record];
+		item.Tags = item.Tags.join(', ');
+		data.push(item);
+		// console.log(item);
+	}
+	const filename = './ynot.csv';
+	const csv = await json2csv(data, csvOptions);
+	await writeFile(filename, csv, { encoding: 'utf-8'});
+}
+
 (async () => {
 	// const __url = 'https://www.ynot.com/business-directory/ynot-category/alternative-online-billing';
 	// const records = await fetchListings(__url, [], 1);
@@ -121,28 +154,29 @@ async function fetchListings(url, records, page) {
 	// console.log(results);
 	const filePath = './data/ynot-records.json';
 	const raw = await readFile(filePath, { encoding: 'utf-8' });
-	let data = JSON.parse(raw);
-	for (const mainCategory in ynotCategories) {
-		const subCategories = ynotCategories[mainCategory];
-		for (const subCategory in subCategories) {
-			const url = subCategories[subCategory];
-			const records = await fetchListings(url, [], 1);
-			console.log(`Fetching ${records.length} records for ${subCategory}`);
-			for (const record in records) {
-				const recordUrl = records[record];
-				console.log(recordUrl);
-				if (data[recordUrl]) {
-					console.log(`Skipping ${recordUrl}`);
-					continue;
-				}
-				const result = await fetchRecord(recordUrl);
-				result['Main Category'] = mainCategory;
-				result['Sub Category'] = subCategory;
-				data[recordUrl] = result;
-				// console.log(result);
-			}
-			await writeFile(filePath, JSON.stringify(data, null, '\t'), {encoding: 'utf-8'});
-			data = JSON.parse(await readFile(filePath, { encoding: 'utf-8' }));
-		}
-	}
+	const data = JSON.parse(raw);
+	await writeCSV(data);
+	// for (const mainCategory in ynotCategories) {
+	// 	const subCategories = ynotCategories[mainCategory];
+	// 	for (const subCategory in subCategories) {
+	// 		const url = subCategories[subCategory];
+	// 		const records = await fetchListings(url, [], 1);
+	// 		console.log(`Fetching ${records.length} records for ${subCategory}`);
+	// 		for (const record in records) {
+	// 			const recordUrl = records[record];
+	// 			console.log(recordUrl);
+	// 			if (data[recordUrl]) {
+	// 				console.log(`Skipping ${recordUrl}`);
+	// 				continue;
+	// 			}
+	// 			const result = await fetchRecord(recordUrl);
+	// 			result['Main Category'] = mainCategory;
+	// 			result['Sub Category'] = subCategory;
+	// 			data[recordUrl] = result;
+	// 			// console.log(result);
+	// 		}
+	// 		await writeFile(filePath, JSON.stringify(data, null, '\t'), {encoding: 'utf-8'});
+	// 		data = JSON.parse(await readFile(filePath, { encoding: 'utf-8' }));
+	// 	}
+	// }
 })();
