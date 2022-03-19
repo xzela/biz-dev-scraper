@@ -4,6 +4,10 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const fs = require('fs');
 const BASE_URL = 'https://www.ynot.com';
+const util = require('util');
+
+const readFile = util.promisify(fs.readFile);
+const writeFile = util.promisify(fs.writeFile);
 
 const ynotCategories = require('./data/ynot.json');
 
@@ -40,6 +44,10 @@ async function fetchRecord(_url) {
 	const record = {
 		Tags: [],
 	};
+
+	// parse name
+	record.Name = $('.titlearea h2').html();
+
 	// parse contact info
 	$('.siteinfo .business p').each((index, element) => {
 		const data = $(element).html().trim().split('<br>');
@@ -76,7 +84,7 @@ async function fetchRecord(_url) {
 }
 
 async function fetchListings(url, records, page) {
-	let pages = `/page/${page}`;
+	let pages = `page/${page}`;
 	if (page === 1) {
 		pages = '';
 	}
@@ -91,7 +99,6 @@ async function fetchListings(url, records, page) {
 
 	listings.each(async (index, element) => {
 		const _url = $(element).find('a.view_more').attr('href');
-		console.log(`pushing ${_url}`);
 		records.push(_url);
 	});
 	page++;
@@ -112,19 +119,30 @@ async function fetchListings(url, records, page) {
 	// const recordUrl = 'https://www.ynot.com/business-directory/31065/rabbits-reviews/';
 	// const results = await fetchRecord(recordUrl);
 	// console.log(results);
-
+	const filePath = './data/ynot-records.json';
+	const raw = await readFile(filePath, { encoding: 'utf-8' });
+	let data = JSON.parse(raw);
 	for (const mainCategory in ynotCategories) {
 		const subCategories = ynotCategories[mainCategory];
 		for (const subCategory in subCategories) {
 			const url = subCategories[subCategory];
 			const records = await fetchListings(url, [], 1);
+			console.log(`Fetching ${records.length} records for ${subCategory}`);
 			for (const record in records) {
 				const recordUrl = records[record];
+				console.log(recordUrl);
+				if (data[recordUrl]) {
+					console.log(`Skipping ${recordUrl}`);
+					continue;
+				}
 				const result = await fetchRecord(recordUrl);
 				result['Main Category'] = mainCategory;
 				result['Sub Category'] = subCategory;
-				console.log(result);
+				data[recordUrl] = result;
+				// console.log(result);
 			}
+			await writeFile(filePath, JSON.stringify(data, null, '\t'), {encoding: 'utf-8'});
+			data = JSON.parse(await readFile(filePath, { encoding: 'utf-8' }));
 		}
 	}
 })();
