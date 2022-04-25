@@ -28,6 +28,7 @@ async function fetchSpeakerData(_url) {
 	speaker.URL = _url;
 	speaker.Name = $('article header .title').text().trim();
 	speaker.Title = $('article header .subtitle').text().trim();
+	speaker.Image = $('article header figure img').attr('data-src');
 
 	// social records here
 	$('article header ul li a').each((index, element) => {
@@ -73,6 +74,7 @@ async function writeCSV(records) {
 			'Instagram',
 			'Facebook',
 			'Biography',
+			'Image',
 			'URL',
 		],
 	};
